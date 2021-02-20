@@ -3,8 +3,24 @@
     $model = $block->getAfraModel();
     $app_data=$model->getCollection()->getFirstItem();
     $token = substr(md5(microtime()),rand(0,26),5);
+    $url= $block->AframarkUrl();
+    $widget= $block->getWiget();
+    $widgetips= $block->getwidgetips();
+    $widgetips=explode(",",$widgetips);
+    $widget=$block->getWiget();
+    $matched=false;
+    
+        if (in_array($block->getUserip(), $widgetips)){
+        // Match IP
+        $matched= true;
+    }
+    
 ?>
+
+<?php if($widget!='0' || $matched!=false): ?>   
+<!-- Disable/Enable widget Q/A -->         
 <?php if(!empty($app_data->getData())): ?>
-<script type="text/javascript" async="" src="https://my.aframark.com/js/Widgets/WidgetQA.js?ver=0.2.9"></script>
+<script type="text/javascript" async="" src="<?php echo $url;?>/js/Widgets/WidgetQA.js?ver=0.2.9"></script>
 <div id="aframark-container" data-ak-api-token='<?php echo $token.$app_data['store_token'] ?>' data-ak-merchant-code='<?php echo $app_data['merchant_code'] ?>' data-ak-sku='<?php echo $product->getSku(); ?>'></div>
+<?php endif; ?>
 <?php endif; ?>

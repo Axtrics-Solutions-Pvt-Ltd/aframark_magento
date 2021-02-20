@@ -5,7 +5,7 @@
  */
 namespace Axtrics\Aframark\Model\Config\Source;
 
-class Yesno implements \Magento\Framework\Option\ArrayInterface
+class mode implements \Magento\Framework\Option\ArrayInterface
 {
     /**
      * Options getter
@@ -14,7 +14,7 @@ class Yesno implements \Magento\Framework\Option\ArrayInterface
      */
     public function toOptionArray()
     {
-        return [['value' => 1, 'label' => __('Yes')], ['value' => 0, 'label' => __('No')]];
+        return [['value' => 1, 'label' => __('Live')], ['value' => 0, 'label' => __('Test')],['value' => 2, 'label' => __('Developer')]];
     }
 
     /**
@@ -24,6 +24,6 @@ class Yesno implements \Magento\Framework\Option\ArrayInterface
      */
     public function toArray()
     {
-        return [0 => __('No'), 1 => __('Yes')];
+        return [0 => __('Test'), 1 => __('Live'),2 => __('Developer')];
     }
 }

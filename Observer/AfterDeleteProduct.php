@@ -1,7 +1,10 @@
 <?php
+
 namespace Axtrics\Aframark\Observer;
+
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+
 /**
  * Class AfterDeleteProduct
  * @package Axtrics\Aframark\Observer
@@ -28,7 +31,7 @@ class AfterDeleteProduct implements ObserverInterface
      * @var helperblock
      */
     protected $helperblock;
-     /**
+    /**
      * @var Logger
      */
     protected $logger;
@@ -39,53 +42,48 @@ class AfterDeleteProduct implements ObserverInterface
     /**
      * @param \Magento\Framework\HTTP\Client\Curl $curl
      */
-            public function __construct(
-            \Magento\Framework\HTTP\Client\Curl $curl,
-            \Axtrics\Aframark\Model\Aframark $afra,
-            \Psr\Log\LoggerInterface $logger,
-            \Axtrics\Aframark\Block\Data $helperBlock
-            )
-            {
-            $this->_curl = $curl;
-            $this->_afra = $afra;
-            $this->helperblock = $helperBlock;
-            $this->logger = $logger;
-            }
-    
+    public function __construct(
+        \Magento\Framework\HTTP\Client\Curl $curl,
+        \Axtrics\Aframark\Model\Aframark $afra,
+        \Psr\Log\LoggerInterface $logger,
+        \Axtrics\Aframark\Block\Data $helperBlock
+    ) {
+        $this->_curl = $curl;
+        $this->_afra = $afra;
+        $this->helperblock = $helperBlock;
+        $this->logger = $logger;
+    }
+
     public function execute(Observer $observer)
     {
-       try{
+        try {
 
-    	$param = $observer->getEvent()->getProduct();
-  		$app_data=$this->_afra->getCollection()->getFirstItem();
-        $_sku = $param->getSku();
-        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/Aframark.log');
-        $logger = new \Zend\Log\Logger();
-        $logger->addWriter($writer);
-        $logger->info($_sku);
-  		$product_collections=array(
-                        'id'=>$param->getId(),
-                        'sku'=>$param->getSku(),
-                   );
-        
-  		 $responsedata=array('action' => "Delete",'status' => 200,
-            'merchant_code'=>$app_data['merchant_code'],
-                    'products' => $product_collections);
-        $url=$this->helperblock->getAfraUrl();
-    	$this->_curl->post($url, $responsedata);
-    	
-    	$response = $this->_curl->getBody();
-    	
-      
-    }
-    catch(\Exception $e){
-$product = false;
-$this->logger->critical('Error message', ['exception' => $e]);
-    	
-    }
-      
-			return ; 
-        
+            $param = $observer->getEvent()->getProduct();
+            $app_data = $this->_afra->getCollection()->getFirstItem();
+            $_sku = $param->getSku();
+            $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/Aframark.log');
+            $logger = new \Zend\Log\Logger();
+            $logger->addWriter($writer);
+            $logger->info($_sku);
+            $product_collections = array(
+                'id' => $param->getId(),
+                'sku' => $param->getSku(),
+            );
+
+            $responsedata = array(
+                'action' => "Delete", 'status' => 200,
+                'merchant_code' => $app_data['merchant_code'],
+                'products' => $product_collections
+            );
+            $url = $this->helperblock->getAfraUrl();
+            $this->_curl->post($url, $responsedata);
+
+            $response = $this->_curl->getBody();
+        } catch (\Exception $e) {
+            $product = false;
+            $this->logger->critical('Error message', ['exception' => $e]);
+        }
+
+        return;
     }
 }
-   
