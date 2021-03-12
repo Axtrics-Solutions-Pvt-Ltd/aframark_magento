@@ -6,17 +6,16 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 
-/**
- * Class AfterProduct
- * @package Axtrics\Aframark\Observer
- */
 class AfterProduct implements ObserverInterface
 {
     /**
      * @param Observer $observer
      *
      */
-
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     */
+    protected $scopeConfig;
     /**
      * @var curl
      */
@@ -64,7 +63,8 @@ class AfterProduct implements ObserverInterface
         \Magento\Framework\View\Layout $layout,
         \Magento\Framework\UrlInterface $frontUrlModel,
         \Psr\Log\LoggerInterface $logger,
-        \Axtrics\Aframark\Block\Data $helperBlock
+        \Axtrics\Aframark\Block\Data $helperBlock,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
     ) {
         $this->layout = $layout;
         $this->_curl = $curl;
@@ -75,6 +75,7 @@ class AfterProduct implements ObserverInterface
         $this->frontUrlModel = $frontUrlModel;
         $this->logger = $logger;
         $this->helperblock = $helperBlock;
+        $this->scopeConfig = $scopeConfig;
     }
 
     public function execute(Observer $observer)
@@ -93,8 +94,9 @@ class AfterProduct implements ObserverInterface
             $routeParams['id'] = $product->getId();
             $routeParams['s'] = $product->getUrlKey();
             $producturl = $this->frontUrlModel->getUrl('catalog/product/view', [
-                '_scope' => $storeId, 'id' => $routeParams['id'], 's' => $routeParams['s'], '_nosid' => true
+            '_scope' => $storeId, 'id' => $routeParams['id'], 's' => $routeParams['s'], '_nosid' => true
             ]);
+            $producturl = preg_replace('#/catalog/product/view/id/\d+/s#', '', $producturl);
             if ($app_data['upc_attribute_code'] != null) {
                 $upc = $app_data['upc_attribute_code'];
             } else {
@@ -125,7 +127,7 @@ class AfterProduct implements ObserverInterface
                 $image_url = $this->_storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . 'catalog/product' . $product->getImage();
             }
             $cats = $product->getCategoryIds();
-            $categorys = array();
+            $categorys = [];
             if (count($cats)) {
                 foreach ($cats as $cat) {
 
@@ -133,26 +135,37 @@ class AfterProduct implements ObserverInterface
                     $categorys[] = $_category->getName();
                 }
             }
-            $product_collections = array(
-                'id' => $product->getId(),
-                'title' => $product->getName(),
-                'sku' => $product->getSku(),
-                'image' => $image_url,
-                'category' => $categorys,
-                'mpn' => $product[$mpn],
-                'upc' => $product[$upc],
-                'ean' => $product[$ean],
-                'isbn' => $product[$isbn],
-                'price' => $product->getPrice(),
-                'url' => $producturl,
+ 
+            if (!empty($this->scopeConfig->getValue(
+                'catalog/seo/product_url_suffix',
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            ))) {
+                $suffix=$this->scopeConfig->getValue(
+                    'catalog/seo/product_url_suffix',
+                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+                );
+                $producturl = rtrim($producturl, '/');
+                $producturl=$producturl.$suffix;
+            }
+            $product_collections = [
+            'id' => $product->getId(),
+            'title' => $product->getName(),
+            'sku' => $product->getSku(),
+            'image' => $image_url,
+            'category' => $categorys,
+            'mpn' => $product[$mpn],
+            'upc' => $product[$upc],
+            'ean' => $product[$ean],
+            'isbn' => $product[$isbn],
+            'price' => $product->getPrice(),
+            'url' => $producturl,
 
-            );
+            ];
             $status = $product->getStatus() == 1 ? 'enabled' : 'disabled';
-            $responsedata = array(
-                'action' => $action, 'status' => $status,  'merchant_code' => $app_data['merchant_code'],
-                'products' => $product_collections
-            );
-
+            $responsedata = [
+            'action' => $action, 'status' => $status,  'merchant_code' => $app_data['merchant_code'],
+            'products' => $product_collections
+            ];
 
             $url = $this->helperblock->getAfraUrl();
             $this->_curl->post($url, $responsedata);
@@ -160,6 +173,5 @@ class AfterProduct implements ObserverInterface
         } catch (\Exception $e) {
             $this->logger->critical('Error message', ['exception' => $e]);
         }
-        return;
     }
 }

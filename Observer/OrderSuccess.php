@@ -1,14 +1,9 @@
 <?php
-
 namespace Axtrics\Aframark\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 
-/**
- * Class OrderSuccess
- * @package Axtrics\Aframark\Observer
- */
 class OrderSuccess implements ObserverInterface
 {
     /**
@@ -41,22 +36,21 @@ class OrderSuccess implements ObserverInterface
      * @var configurable
      */
     protected $_configurable;
-
+  
     /**
      * @var helperblock
      */
     protected $helperblock;
 
-    /**
-     * @var Logger
-     */
+     /**
+      * @var Logger
+      */
     protected $logger;
 
-    /**
-     * @var objectmanager
-     */
+     /**
+      * @var objectmanager
+      */
     protected $_objectManager;
-
 
     /**
      * @param Logger $logger
@@ -92,78 +86,78 @@ class OrderSuccess implements ObserverInterface
     {
         try {
             $orderids = $observer->getEvent()->getOrderIds();
-            $app_data = $this->_afra->getCollection()->getFirstItem();
+            $app_data=$this->_afra->getCollection()->getFirstItem();
 
             foreach ($orderids as $orderid) {
-                $orders = $this->_order->load($orderid);
-                $orderItems = $orders->getAllItems();
-                $deta = $orders->getShippingAddress()->getData();
-                if ($orders->getCustomerId() === NULL) {
+                 $orders = $this->_order->load($orderid);
+                    $orderItems = $orders->getAllItems();
+                    $deta = $orders->getShippingAddress()->getData();
+                if ($orders->getCustomerId() === null) {
                     $firstname = $orders->getBillingAddress()->getFirstname();
                     $lastname = $orders->getBillingAddress()->getLastname();
                 } else {
                     $customer  = $this->_customer->load($orders->getCustomerId());
                     $firstname = $customer->getDefaultBillingAddress()->getFirstname();
                     $lastname  = $customer->getDefaultBillingAddress()->getLastname();
-                    $customer_name = $firstname . ' ' . $lastname;
+                    $customer_name = $firstname.' '.$lastname;
                 }
-                $countryCode = $deta['country_id'];
-                $country = $this->_countryFactory->create()->loadByCode($countryCode);
-                $country = $country->getName();
-                $items = array();
+                    $countryCode = $deta['country_id'];
+                    $country = $this->_countryFactory->create()->loadByCode($countryCode);
+                    $country=$country->getName();
+                        $items=[];
                 foreach ($orderItems as $listitems) {
-                    $getproduct = $this->_objectManager->create('Magento\Catalog\Model\Product')->load($listitems['product_id']);
-                    $store = $this->_objectManager->get('Magento\Store\Model\StoreManagerInterface')->getStore();
-                    $producturl = $getproduct->getProductUrl();
+                    $getproduct = $this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($listitems['product_id']);
+                    $store = $this->_objectManager->get(\Magento\Store\Model\StoreManagerInterface::class)->getStore();
+                        $producturl=$getproduct->getProductUrl();
                     $productImageUrl = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . 'catalog/product' . $getproduct->getImage();
-                    $parentIds = $this->_configurable->getParentIdsByChild($listitems['product_id']);
+                         $parentIds = $this->_configurable->getParentIdsByChild($listitems['product_id']);
                     $parentId = array_shift($parentIds);
-
+                         
                     if ($parentId) {
-                        $parentrepository = $this->_objectManager->create('Magento\Catalog\Model\Product')->load($parentId);
-                        $parentsku = "";
-                        $parentsku = $parentrepository->getSku();
+                         $parentrepository=$this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($parentId);
+                         $parentsku="";
+                         $parentsku=$parentrepository->getSku();
                     } else {
-                        $parentsku = "null";
+                        $parentsku="null";
                     }
-                    if ($app_data['upc_attribute_code'] != null) {
-                        $upc = $app_data['upc_attribute_code'];
+                    if ($app_data['upc_attribute_code']!=null) {
+                        $upc=$app_data['upc_attribute_code'];
                     } else {
-                        $upc = "Null";
+                        $upc="Null";
                     }
-                    if ($app_data['ean_attribute_code'] != null) {
-                        $ean = $app_data['ean_attribute_code'];
+                    if ($app_data['ean_attribute_code']!=null) {
+                        $ean=$app_data['ean_attribute_code'];
                     } else {
-                        $ean = "Null";
+                        $ean="Null";
                     }
-                    if ($app_data['mpn_attribute_code'] != null) {
-                        $mpn = $app_data['mpn_attribute_code'];
+                    if ($app_data['mpn_attribute_code']!=null) {
+                        $mpn=$app_data['mpn_attribute_code'];
                     } else {
-                        $mpn = "Null";
+                        $mpn="Null";
                     }
-                    if ($app_data['isbn_attribute_code'] != null) {
-                        $isbn = $app_data['isbn_attribute_code'];
+                    if ($app_data['isbn_attribute_code']!=null) {
+                        $isbn=$app_data['isbn_attribute_code'];
                     } else {
-                        $isbn = "Null";
+                        $isbn="Null";
                     }
-                    $items[] = array('id' => $listitems['item_id'], 'title' => $getproduct['name'], 'image' => $productImageUrl, 'parent_sku' => $parentsku != "null" ? $parentsku : $listitems['sku'], 'sku' => $listitems['sku'], 'upc' => $getproduct[$upc], 'ean' => $getproduct[$ean], 'mpn' => $getproduct[$mpn], 'isbn' => $getproduct[$isbn], 'url' => $producturl);
+                            $items[]=['id'=>$listitems['item_id'],'title'=>$getproduct['name'],'image'=>$productImageUrl,'parent_sku'=>$parentsku!="null"?$parentsku:$listitems['sku'],'sku'=>$listitems['sku'],'upc'=>$getproduct[$upc],'ean'=>$getproduct[$ean],'mpn'=>$getproduct[$mpn],'isbn'=>$getproduct[$isbn],'url'=>$producturl];
                 }
-                $dataa[] = array('id' => $orders->getIncrementId(), 'created_at' => $orders['created_at'], 'customer' => array('email' => $orders['customer_email'], 'first_name' => $firstname, 'last_name' => $lastname, 'country' => $country), 'line_items' => $items);
+                $dataa[]=['id' => $orders->getIncrementId(),'created_at'=>$orders['created_at'],'customer'=>['email'=>$orders['customer_email'],'first_name'=>$firstname,'last_name'=>$lastname,'country'=>$country],'line_items' =>$items];
             }
-
-            $responsedata = array(
-                'status' => 200, 'action' => 'NewOrder', 'merchant_code' => $app_data['merchant_code'],
-                'orders' => $dataa
-            );
-
-            $url = $this->helperblock->getAfraUrl();
-
-            $this->_curl->post($url, $responsedata);
-
-            $response = $this->_curl->getBody();
+                       
+                        $responsedata=[ 'status' => 200,'action'=>'NewOrder','merchant_code'=>$app_data['merchant_code'],
+                    'orders' => $dataa];
+                      
+                        $url=$this->helperblock->getAfraUrl();
+        
+                        $this->_curl->post($url, $responsedata);
+        
+                        $response = $this->_curl->getBody();
+        
         } catch (\Exception $e) {
 
             $this->logger->critical('Error message', ['exception' => $e]);
+        
         }
     }
 }
